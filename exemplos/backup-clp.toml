@@ -1,0 +1,41 @@
+# Configuração de exemplo do backup-clp. Caminhos relativos são a partir deste arquivo.
+titulo = "Fábrica — programas das máquinas"
+acervo = "acervo"           # onde ficam os conteúdos (por hash) e o índice SQLite
+intervalo = 60              # segundos entre varreduras das pastas
+espera_estavel = 15         # o arquivo precisa ficar parado esse tempo antes de ser copiado
+
+[painel]
+ouvir = "127.0.0.1"         # 0.0.0.0 para abrir na rede
+porta = 8899
+
+[retencao]
+versoes = 200               # por arquivo (0 = todas)
+dias = 0                    # apaga versões mais velhas que isso (0 = nunca); a mais nova sempre fica
+
+[[maquina]]
+nome = "Extrusora 1"
+# Pastas onde os técnicos salvam o projeto. Vale caminho de rede (UNC) no Windows.
+pastas = ["//srv-arquivos/clp/extrusora1", "C:/Projetos/Extrusora1"]
+padroes = ["*.wps", "*.V6F", "*.xml", "*.csv"]
+ignorar = ["~*", "*.bak", "*.tmp", "Backup*"]
+autor = "engenharia"        # usado quando o sistema não informa o dono do arquivo
+
+[[maquina]]
+nome = "Injetora 2"
+pastas = ["//srv-arquivos/clp/injetora2"]
+padroes = ["*.emtp", "*.cmtp", "*.isp", "*.dpa"]
+
+# A IHM expõe o projeto por FTP: baixa de tempos em tempos e guarda se mudou.
+[maquina.ftp]
+host = "10.0.0.22"
+usuario = "backup"
+senha_env = "SENHA_IHM_INJETORA2"   # ou senha = "..." (evite senha no arquivo)
+caminhos = ["/project/injetora2.cmtp", "/backup/"]   # terminado em "/" = pasta, filtrada pelos padrões
+intervalo = 900
+
+[[maquina]]
+nome = "Sopradora 3"
+# CLP com servidor web que entrega o backup do programa.
+[maquina.http]
+urls = ["http://10.0.0.23/backup/programa.bin"]
+intervalo = 3600
