@@ -16,7 +16,7 @@ from .diferenca import comparar, em_texto
 from .exportar import ErroExportacao, exportar_git
 from .remoto import Coletor
 from .servidor import criar_servidor, nome_download
-from .vigia import Vigia
+from .vigia import Vigia, listar
 
 CONFIG_PADRAO = os.environ.get("BACKUP_CLP_CONFIG", "backup-clp.toml")
 
@@ -201,7 +201,14 @@ def cmd_verificar(a):
     for m in cfg.maquinas:
         print(f"  {m.nome}")
         for p in m.pastas:
-            print(f"    pasta {p}{'' if Path(p).exists() else '  (inacessível agora)'}")
+            if not Path(p).exists():
+                print(f"    pasta {p}  (inacessível agora)")
+                continue
+            casados = sum(1 for _ in listar(p, m.padroes, m.ignorar, m.recursivo))
+            print(f"    pasta {p}  ({casados} arquivo(s) casam com os padrões)")
+            if not casados and any(f for _, _, f in os.walk(p)):
+                print("      aviso: a pasta tem arquivos, mas nenhum casa com os padrões. Projeto que é uma pasta"
+                      " inteira (WEG WPS 2.60, por exemplo) pede padroes = [\"*\"].")
         print(f"    padrões {' '.join(m.padroes)}")
         if m.ftp:
             print(f"    ftp {m.ftp.usuario}@{m.ftp.host}:{m.ftp.porta} {' '.join(m.ftp.caminhos)} "

@@ -196,6 +196,16 @@ class TestDiferenca(unittest.TestCase):
         self.assertIn("+PS;210", r["linhas"])
         self.assertTrue(r["linhas"][0].startswith("--- a.csv"))
 
+    def test_xml_de_uma_linha_so_quebra_entre_tags(self):
+        # Setup Configuration.xsc do WPS 2.60: tudo numa linha; a mudança de IP tem que aparecer sozinha
+        campos = "".join(f"<lCampo{i}>{i}</lCampo{i}>" for i in range(30))
+        a = f'<?xml version="1.0"?><setup>{campos}<lIPAddress>192.168.000.010</lIPAddress><lDHCP>1</lDHCP></setup>'
+        b = a.replace("192.168.000.010", "192.168.003.040").replace("<lDHCP>1", "<lDHCP>0")
+        r = comparar_bytes(a.encode(), b.encode(), "a.xsc", "b.xsc")
+        self.assertEqual((r["adicionadas"], r["removidas"]), (2, 2))
+        self.assertIn("+<lIPAddress>192.168.003.040</lIPAddress>", r["linhas"])
+        self.assertIn("-<lDHCP>1</lDHCP>", r["linhas"])
+
     def test_texto_utf16_e_latin1(self):
         self.assertEqual(decodificar("tag;descrição\n".encode("utf-16")), "tag;descrição\n")
         self.assertEqual(decodificar("pressão".encode("latin-1")), "pressão")
@@ -485,15 +495,32 @@ class TestCLI(ComPasta):
         with self.assertRaisesRegex(ErroConfig, "caminhos"):
             interpretar({"maquina": [{"nome": "X", "ftp": {"host": "10.0.0.9"}}]})
 
+    def test_verificar_avisa_quando_nada_casa(self):
+        proj = self.tmp / "WPS 2.60 Configurations" / "OP3495" / "ladderdiagram"
+        proj.mkdir(parents=True)
+        (proj / "02_Extrusora.xdd").write_text("<ladder/>")
+        toml = self.tmp / "wps.toml"
+        pasta = (self.tmp / "WPS 2.60 Configurations").as_posix()
+        toml.write_text(f'[[maquina]]\nnome = "Extrusora"\npastas = ["{pasta}"]\n')
+        codigo, out, _ = rodar("-c", str(toml), "verificar")
+        self.assertEqual(codigo, 0)
+        self.assertIn("0 arquivo(s) casam", out)
+        self.assertIn('padroes = ["*"]', out)
+        toml.write_text(f'[[maquina]]\nnome = "Extrusora"\npastas = ["{pasta}"]\npadroes = ["*"]\n')
+        out = rodar("-c", str(toml), "verificar")[1]
+        self.assertIn("1 arquivo(s) casam", out)
+        self.assertNotIn("aviso", out)
+
     def test_exemplo_de_configuracao(self):
         os.environ["SENHA_IHM_INJETORA2"] = "teste"
         self.addCleanup(os.environ.pop, "SENHA_IHM_INJETORA2", None)
         cfg = carregar(RAIZ / "exemplos" / "backup-clp.toml")
-        self.assertEqual([m.nome for m in cfg.maquinas], ["Extrusora 1", "Injetora 2", "Sopradora 3"])
+        self.assertEqual([m.nome for m in cfg.maquinas], ["Extrusora 1", "Extrusora 2", "Injetora 2", "Sopradora 3"])
         self.assertEqual(cfg.maquinas[0].pastas[0], "//srv-arquivos/clp/extrusora1", "UNC fica como está")
         self.assertEqual(cfg.maquinas[0].pastas[1], "C:/Projetos/Extrusora1")
-        self.assertEqual(cfg.maquinas[1].ftp.senha, "teste")
-        self.assertEqual(cfg.maquinas[1].ftp.host, "10.0.0.22")
+        self.assertEqual(cfg.maquinas[1].padroes, ["*"])
+        self.assertEqual(cfg.maquinas[2].ftp.senha, "teste")
+        self.assertEqual(cfg.maquinas[2].ftp.host, "10.0.0.22")
         self.assertEqual(cfg.retencao.versoes, 200)
         self.assertEqual(rodar("-c", str(RAIZ / "exemplos" / "backup-clp.toml"), "verificar")[0], 0)
 

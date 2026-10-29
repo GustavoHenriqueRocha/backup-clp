@@ -21,6 +21,13 @@ ignorar = ["~*", "*.bak", "*.tmp", "Backup*"]
 autor = "engenharia"        # usado quando o sistema não informa o dono do arquivo
 
 [[maquina]]
+nome = "Extrusora 2"
+# WEG WPS 2.60 não grava um arquivo .wps: o projeto é uma pasta inteira (ladder em .xdd, blocos em .xfb/.pfb,
+# configuração em .xsc/.properties, alguns arquivos sem extensão). Vigie a pasta toda.
+pastas = ["C:/Users/engenharia/WPS 2.60 Configurations"]
+padroes = ["*"]
+
+[[maquina]]
 nome = "Injetora 2"
 pastas = ["//srv-arquivos/clp/injetora2"]
 padroes = ["*.emtp", "*.cmtp", "*.isp", "*.dpa"]

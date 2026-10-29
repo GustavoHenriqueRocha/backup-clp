@@ -7,6 +7,7 @@
 """
 import difflib
 import io
+import re
 import zipfile
 
 from .acervo import sha256
@@ -40,8 +41,17 @@ def eh_zip(dados):
     return dados[:4] == b"PK\x03\x04" or (dados[:4] == b"PK\x05\x06")
 
 
+def _linhas(texto):
+    """Linhas para o diff. XML gravado numa linha só (WEG WPS 2.60 faz assim) é quebrado entre as tags,
+    senão qualquer mudança vira "a linha inteira mudou"."""
+    linhas = texto.splitlines()
+    if texto.lstrip().startswith("<") and any(len(l) > 200 for l in linhas):
+        return re.sub(r">\s*<", ">\n<", texto).splitlines()
+    return linhas
+
+
 def diff_texto(a, b, nome_a="a", nome_b="b"):
-    linhas = list(difflib.unified_diff(a.splitlines(), b.splitlines(), nome_a, nome_b, lineterm="", n=3))
+    linhas = list(difflib.unified_diff(_linhas(a), _linhas(b), nome_a, nome_b, lineterm="", n=3))
     adic = sum(1 for l in linhas if l.startswith("+") and not l.startswith("+++"))
     rem = sum(1 for l in linhas if l.startswith("-") and not l.startswith("---"))
     cortado = len(linhas) > MAX_LINHAS

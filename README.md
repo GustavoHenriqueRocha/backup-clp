@@ -113,6 +113,8 @@ intervalo = 900
 ```
 
 - `padroes` e `ignorar` não diferenciam maiúsculas. Sem `padroes`, vale uma lista de extensões comuns de CLP e IHM, mais `*.xml`, `*.csv` e `*.txt`.
+- **Projeto que é uma pasta inteira.** O WEG WPS 2.60 não grava um `.wps`: o projeto é uma pasta (ladder em `.xdd`, blocos em `.xfb`/`.pfb`, configuração em `.xsc`/`.properties`, mais de 30 tipos e arquivos sem extensão). Aponte para `WPS 2.60 Configurations` com `padroes = ["*"]`. O `verificar` avisa quando uma pasta tem arquivos mas nenhum casa com os padrões.
+- XML gravado numa linha só (como o do WPS 2.60) é quebrado entre as tags no "o que mudou", então uma troca de IP aparece como as duas linhas `<lIPAddress>` em vez de "a linha inteira mudou".
 - Com mais de uma pasta na mesma máquina, o arquivo leva o nome da pasta na frente, para não misturar.
 - `[maquina.http]` com `urls = [...]` faz o mesmo para CLPs e IHMs que entregam o backup por HTTP.
 - Uma IHM desligada ou uma pasta de rede fora do ar não param o resto: o erro aparece no log e na página, e a coleta segue na próxima volta.
